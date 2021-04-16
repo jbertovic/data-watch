@@ -70,7 +70,7 @@ impl ReqBasic {
         let mut broker = Broker::from_registry().await.unwrap();
         let data = (self.translation.unwrap())(response);
         for data_point in data {
-            info!("<DataResponse> publised");
+            info!("<DataResponse> publised: {}", self.source_name);
             broker.publish(
                 DataResponse{
                     source_name: self.source_name.clone(),

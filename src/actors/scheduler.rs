@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use xactor::*;
 use super::RequestSchedule;
+use super::Stop;
 use super::ReqBasic;
 use log::{info, debug};
 
@@ -31,6 +32,10 @@ impl Actor for Scheduler {
         debug!("Actor::Scheduler started");
         Ok(())
     }
+
+    async fn stopped(&mut self, _: &mut Context<Self>) {
+        info!("Scheduler Stopped");
+    }
 }
 
 #[async_trait]
@@ -45,6 +50,15 @@ impl Handler<RequestSchedule> for Scheduler {
         newactor.send(msg).unwrap();
     }
 }
+
+#[async_trait]
+impl Handler<Stop> for Scheduler {
+    async fn handle(&mut self, ctx: &mut Context<Self>, _msg: Stop) {
+        info!("<Stop> received");
+        ctx.stop(None);
+    }
+}
+
 
 impl Scheduler {
     pub fn new() -> Scheduler {

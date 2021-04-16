@@ -3,7 +3,7 @@ use std::time::Duration;
 use std::env;
 use xactor::Actor;
 use async_std::task;
-use data_watch::actors::{CsvWriter, StdoutWriter, RequestSchedule, Scheduler};
+use data_watch::actors::{CsvWriter, StdoutWriter, RequestSchedule, Scheduler, Stop};
 use data_watch::DataTimeStamp;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -20,6 +20,11 @@ async fn main() -> Result<(), xactor::Error> {
     
     // start scheduler
     let scheduler = Scheduler::new().start().await?;
+    let scheduler_addr = scheduler.clone();
+
+    let scheduler_task = xactor::spawn(async {
+        scheduler.wait_for_stop().await;
+    });
 
     // start datawriter to push output to screen
     let _datawriter = StdoutWriter.start().await?;
@@ -33,9 +38,13 @@ async fn main() -> Result<(), xactor::Error> {
         translation: translation, 
     };
 
-    scheduler.send(request_message)?;
+    scheduler_addr.send(request_message)?;
 
-    task::sleep(Duration::from_secs(60*5*20+10)).await;
+    task::sleep(Duration::from_secs(10+1)).await;
+
+    scheduler_addr.send(Stop)?;    
+
+    scheduler_task.await;
     Ok(())
 }
 

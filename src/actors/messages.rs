@@ -20,3 +20,6 @@ pub struct DataResponse{
     pub source_name: String, 
     pub data_ts: DataTimeStamp,
 }
+
+#[message]
+pub struct Stop;
