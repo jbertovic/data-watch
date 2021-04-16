@@ -2,6 +2,8 @@
 
 Thoughts around building an Data Watch framework in Rust that would allow me to stream data from multiple API that would used for alerts, storage, or viewing.
 
+Setup using an actor framework.
+
 
 # Starting Project
 
@@ -14,7 +16,7 @@ Thoughts around building an Data Watch framework in Rust that would allow me to 
 4) Listen for clean data for storage in memory or store on disk/db
 
 
-# First Product - Request side
+# First Product - Actor and Message setup
 ![Request Side](./doc/design_request.JPG)
 ![Response Side](./doc/design_response.JPG)
 ![Request Basic](./doc/request_basic.JPG)
@@ -38,8 +40,8 @@ Probably a bit too large in that it won't do anything well.  Start project and t
 - able to combine data to create new timeseries data
 
 ### Store
-- memory
-- csv/filefolders
+- (start) memory
+- (start) csv/filefolders
 - database
 
 ### Interaction tools
