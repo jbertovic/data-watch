@@ -1,3 +1,8 @@
+
+TODO: 
+    // can translation be one script instead of 3?  String that gives name, description and path to value?
+    // multi source vs single source
+
 # Developing in Real-time.  Not a useable product!
 
 Thoughts around building an Data Watch framework in Rust that would allow me to stream data from multiple API that would used for alerts, storage, or viewing.
@@ -17,40 +22,13 @@ Setup using an actor framework.
 
 
 # First Product - Actor and Message setup
-![Request Side](./doc/design_request.JPG)
-![Response Side](./doc/design_response.JPG)
-![Request Basic](./doc/request_basic.JPG)
 
-# Big Vision / Future Considerations
-Probably a bit too large in that it won't do anything well.  Start project and then narrow in on a few of these components.  Also could split this into multiple projects.
+User/Config SENDS RequestJson(message) TO Scheduler(actor) 
+Scheduler(actor) SEND RequestJson(message) TO RequestJson(actor)
+RequestJson(actor) SEND Refresh(message) TO RequestJson(actor)
+RequestJson(actor) PUBLISH DataResponse(message)
 
-### Scheduler
-- (start) batch pull
-- streaming pull
-- batch push
-- streaming push 
 
-### Extraction Request
-- (start) api (no auth)
-- api (static auth)
-- api (dynamic auth)
 
-### Data
-- single timeseries definition
-- able to combine data to create new timeseries data
 
-### Store
-- (start) memory
-- (start) csv/filefolders
-- database
-
-### Interaction tools
-- server
-- api to grab data in memory
-- cli
-- configuration file?
-
-### Monitoring - for using the data
-- Alerts
-- Spawn tasks when alerts hit
 

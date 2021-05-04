@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use xactor::*;
 use super::RequestSchedule;
 use super::Stop;
-use super::ReqBasic;
+use super::RequestJson;
 use log::{info, debug};
 
 /// Scheduler
@@ -23,7 +23,7 @@ use log::{info, debug};
 
 pub struct Scheduler {
     scheduled: Vec<RequestSchedule>,
-    actors: Vec<Addr<ReqBasic>>,
+    actors: Vec<Addr<RequestJson>>,
 }
 
 #[async_trait]
@@ -45,7 +45,7 @@ impl Handler<RequestSchedule> for Scheduler {
         info!("<RequestSchedule> received: {}", msg.source_name);
         // create new actor to manage request
         self.scheduled.push(msg.clone());
-        let newactor = ReqBasic::default().start().await.unwrap();
+        let newactor = RequestJson::default().start().await.unwrap();
         self.actors.push(newactor.clone());
         newactor.send(msg).unwrap();
     }

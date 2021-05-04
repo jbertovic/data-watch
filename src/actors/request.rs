@@ -1,8 +1,12 @@
+use std::time::UNIX_EPOCH;
+use std::time::SystemTime;
 use crate::DataTimeStamp;
 use std::time::Duration;
 use async_trait::async_trait;
 use xactor::*;
 use super::{DataResponse, RequestSchedule, Refresh};
+use jmespatch::Expression;
+// use crate::interpreter::interpret2;
 use surf::Request;
 use log::{debug, info};
 
@@ -26,14 +30,14 @@ use log::{debug, info};
 // IDEA: or store the client state
 
 #[derive(Default)]
-pub struct ReqBasic {
+pub struct RequestJson {
     source_name: String,
     request: Option<Request>,
-    translation: Option< fn(String) -> Vec<DataTimeStamp> >,
+    translation: Option<Expression<'static>>,
 }
 
 #[async_trait]
-impl Actor for ReqBasic {
+impl Actor for RequestJson {
     async fn started(&mut self, _ctx: &mut Context<Self>) -> Result<()> {
         // optional: do stuff on handler startup, like subscribing to a Broker
         // ctx.subscribe::<RequestSchedule>().await?;
@@ -43,38 +47,41 @@ impl Actor for ReqBasic {
 }
 
 #[async_trait]
-impl Handler<RequestSchedule> for ReqBasic {
+impl Handler<RequestSchedule> for RequestJson {
     async fn handle(&mut self, ctx: &mut Context<Self>, msg: RequestSchedule) {
         debug!("<RequestSchedule> received: {:?}", msg);
         info!("<RequestSchedule> received: {}", msg.source_name);
         self.source_name = msg.source_name;
         self.request = Some(surf::get(msg.api_url).build());
-        self.translation = Some(msg.translation.clone());
+        self.translation = Some(jmespatch::compile(msg.jmespatch_query.as_ref()).unwrap());
         self.run_request().await;
         ctx.send_interval(Refresh{}, Duration::from_secs(msg.interval_sec));
     }
 }
 
 #[async_trait]
-impl Handler<Refresh> for ReqBasic {
+impl Handler<Refresh> for RequestJson {
     async fn handle(&mut self, _ctx: &mut Context<Self>, _msg: Refresh) {
         info!("<Refresh> received:");
         self.run_request().await;
     }
 }
 
-impl ReqBasic {
+impl RequestJson {
     async fn run_request(&self) {
+        let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
         let response = surf::client().recv_string(self.request.clone().unwrap()).await.unwrap();
         debug!("Response received: {:?}", response);
+        let parsed_json = jmespatch::Variable::from_json(response.as_ref()).unwrap();
+        let expr = self.translation.as_ref().unwrap();
+        let result = expr.search(parsed_json).unwrap();
         let mut broker = Broker::from_registry().await.unwrap();
-        let data = (self.translation.unwrap())(response);
-        for data_point in data {
-            info!("<DataResponse> publised: {}", self.source_name);
+        for entry in result.as_object().unwrap() {
+            info!("<DataResponse> published: {}", self.source_name);
             broker.publish(
                 DataResponse{
                     source_name: self.source_name.clone(),
-                    data_ts: data_point,
+                    data_ts: DataTimeStamp(self.source_name.clone(), entry.0.to_owned(), entry.1.as_number().unwrap(), timestamp),
                 }
             ).unwrap();
         }
