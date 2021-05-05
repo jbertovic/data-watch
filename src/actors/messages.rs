@@ -1,5 +1,4 @@
 use xactor::*;
-use crate::DataTimeStamp;
 use serde::Deserialize;
 
 #[message]
@@ -19,8 +18,11 @@ pub struct Refresh;
 #[message]
 #[derive(Debug, Clone)]
 pub struct DataResponse{
-    pub source_name: String, 
-    pub data_ts: DataTimeStamp,
+    pub source_name: String,
+    pub measure_name: String,
+    pub measure_desc: String,
+    pub measure_value: f64,
+    pub timestamp: u64 
 }
 
 #[message]

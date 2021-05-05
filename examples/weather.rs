@@ -38,13 +38,13 @@ async fn main() -> Result<(), xactor::Error> {
     let request_message = RequestSchedule{ 
         source_name: String::from("Weather"), 
         api_url, 
-        interval_sec: 60*5,
-        jmespatch_query: String::from("main.{temp: temp, humidity: humidity, pressure: pressure}"), 
+        interval_sec: 60,
+        jmespatch_query: String::from("merge({measure_name: name},{measure_data: main})"), 
     };
 
     scheduler_addr.send(request_message)?;
 
-    task::sleep(Duration::from_secs(10+1)).await;
+    task::sleep(Duration::from_secs(60*5)).await;
 
     scheduler_addr.send(Stop)?;    
 

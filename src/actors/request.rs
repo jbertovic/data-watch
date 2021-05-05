@@ -1,6 +1,6 @@
+use std::collections::HashMap;
 use std::time::UNIX_EPOCH;
 use std::time::SystemTime;
-use crate::DataTimeStamp;
 use std::time::Duration;
 use async_trait::async_trait;
 use xactor::*;
@@ -12,13 +12,13 @@ use log::{debug, info};
 
 /// Creates a basic request that runs on a schedule and broadcasts `data_ts`
 
-/// ReqBasic
+/// RequestJson
 /// Start - nothing on start
 /// 
 /// <RequestSchedule>
-/// - store actor address and RequestSchedule message
-/// - run request
-/// - broadcast output message
+/// - store state for source_name, http client, translation of data
+/// - run request and broadcast output message
+/// - set interval to send <Refresh>
 /// 
 /// <Refresh>
 /// - run request
@@ -68,22 +68,70 @@ impl Handler<Refresh> for RequestJson {
 }
 
 impl RequestJson {
+    /// use http client to make request
     async fn run_request(&self) {
-        let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
         let response = surf::client().recv_string(self.request.clone().unwrap()).await.unwrap();
         debug!("Response received: {:?}", response);
-        let parsed_json = jmespatch::Variable::from_json(response.as_ref()).unwrap();
-        let expr = self.translation.as_ref().unwrap();
-        let result = expr.search(parsed_json).unwrap();
+        let data_received = self.parse_json(&response);
+        self.publish_data(data_received).await;
+    }
+
+    /// parse raw json into Hashmap of data
+    /// 
+    /// jmespath parse returns: 
+    /// 
+    /// Multiple measures in one query (includes multiple measure types)
+    /// [
+    ///     { measure_name: "", measure_data: {measure_desc1: #, measure_desc2: #} },
+    ///     { measure_name: "", measure_data: {measure_desc1: #, measure_desc2: #} },
+    /// ]
+    /// 
+    /// OR Single measure in one query (includes multiple measure types)
+    /// { measure_name: "", measure_data: {measure_desc1: #, measure_desc2: #} }
+    /// 
+    /// 
+    /// Return should be Hashmap<&str, Vec<(&str, f64)>
+    /// <measure_name, Vec<measure_desc, measure_value)>>
+    fn parse_json(&self, json_response: &str) -> HashMap<String, Vec<(String, f64)>> {
+        let parsed_json = jmespatch::Variable::from_json(json_response).unwrap();
+        let result = self.translation.as_ref().unwrap().search(parsed_json).unwrap();
+        let mut out = HashMap::new();
+        debug!("Parsed result: {:?}", result);
+        // decide if array or object (ie multiple measures or one measure with multiple data descriptions)
+        if result.is_object() {
+            let measure_name = result.as_object().unwrap().get("measure_name").unwrap().as_string().unwrap().to_owned();
+            let mut data_points = Vec::new();
+            for entry in result.as_object().unwrap().get("measure_data").unwrap().as_object().unwrap() {
+                data_points.push((
+                    entry.0.to_owned(),
+                    entry.1.as_number().unwrap(),
+                ))
+            }
+            out.insert(measure_name, data_points);
+        }
+        else if result.is_array() {
+            unimplemented!();
+        }
+        out
+    }
+
+    async fn publish_data(&self, data_response: HashMap<String, Vec<(String, f64)>>) {
+        let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
         let mut broker = Broker::from_registry().await.unwrap();
-        for entry in result.as_object().unwrap() {
-            info!("<DataResponse> published: {}", self.source_name);
-            broker.publish(
-                DataResponse{
-                    source_name: self.source_name.clone(),
-                    data_ts: DataTimeStamp(self.source_name.clone(), entry.0.to_owned(), entry.1.as_number().unwrap(), timestamp),
-                }
-            ).unwrap();
+        for entry in data_response{
+            let measure_name = entry.0;
+            for data in entry.1 {
+                broker.publish(
+                    DataResponse{
+                        source_name: self.source_name.to_owned(),
+                        measure_name: measure_name.to_owned(),
+                        measure_desc: data.0,
+                        measure_value: data.1,
+                        timestamp,
+                    }
+                ).unwrap();
+            }
         }
     }
+
 }

@@ -68,10 +68,10 @@ impl Handler<DataResponse> for CsvWriter {
         // append to csv file stream
         self.writer.write(format!("\"{}\", \"{}\", \"{}\", {}, {}\n", 
             msg.source_name, 
-            msg.data_ts.0,
-            msg.data_ts.1,
-            msg.data_ts.2,
-            msg.data_ts.3
+            msg.measure_name,
+            msg.measure_desc,
+            msg.measure_value,
+            msg.timestamp,
         ).as_bytes()).await.unwrap();
         self.writer.flush().await.unwrap();
     }

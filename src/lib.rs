@@ -1,8 +1,8 @@
 pub mod actors;
 
-/// (name, value description, value, epoch time)
-#[derive(Debug, Clone)]
-pub struct DataTimeStamp(pub String, pub String, pub f64, pub u64);
+// (name, value description, value, epoch time)
+// #[derive(Debug, Clone)]
+// pub struct DataTimeStamp(pub String, pub String, pub f64, pub u64);
 
 
 //IMPORTANT
@@ -10,8 +10,8 @@ pub struct DataTimeStamp(pub String, pub String, pub f64, pub u64);
 // datasource: weather, name: houston, desc: temp, value: 80.0
 // name: weather-houston, desc: temp, value: 80.0
 // 
-// datasource: TDAPI, name: TRP, desc: last, value: 51.00
-// name: quote, desc: TRP-last, value: 51.00
+// datasource: TDAPI, name: TRP, desc: last, value: 51.00, time
+// name: quote, desc: TRP-last, value: 51.00, time
 
 
 //EXAMPLES

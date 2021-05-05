@@ -30,7 +30,7 @@ impl Actor for StdoutWriter {
 impl Handler<DataResponse> for StdoutWriter {
     async fn handle(&mut self, _ctx: &mut Context<Self>, msg: DataResponse) {
         // println!("Actor::DataWriter message<DataResponse> received");
-        println!("Name: {}, {:?}", msg.source_name, msg.data_ts);
+        println!("{:?}", msg);
     }
 }
 
