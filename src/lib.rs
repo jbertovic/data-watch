@@ -1,17 +1,14 @@
+use std::collections::HashMap;
+use std::sync::RwLock;
+use std::sync::Arc;
+
 pub mod actors;
 
-// (name, value description, value, epoch time)
-// #[derive(Debug, Clone)]
-// pub struct DataTimeStamp(pub String, pub String, pub f64, pub u64);
+pub type SharedVar = Arc<RwLock<HashMap<String, String>>>;
 
-
-//IMPORTANT
-// data structure on DataTimeStamp - do i need source and name?
+// Example data structures
 // datasource: weather, name: houston, desc: temp, value: 80.0
-// name: weather-houston, desc: temp, value: 80.0
-// 
-// datasource: TDAPI, name: TRP, desc: last, value: 51.00, time
-// name: quote, desc: TRP-last, value: 51.00, time
+// datasource: TDAPI, name: TRP, desc: last, value: 51.00
 
 
 //EXAMPLES
@@ -27,11 +24,19 @@ pub mod actors;
 // TODO: add memory cache for measures that is live over a finite time, able to register which variables
 // TODO: convert measure (function) or combination of measures to calculated new measure
 // TODO: datastore to csv (use state for filename) - specify which measures and which file
-
+// TODO: program initiation structure to keep track of actors to minimize users of library having to initialize everything
+// TODO: an elegant way to exit the program
 
 // FUTURE: datastore to postgres database
 // FUTURE: add server to manage scheduler
 // FUTURE: register alert to watch data stream
 // FUTURE: react to alert
 // FUTURE: add ability to fetch events/transactions that aren't timestamp related
+
+
+// Playground links
+// ace<rwlock<hashmap>>
+// https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=91cfd63c6b34d2ecc527dd1a4e2f95e1
+// replace variable
+// https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=b51dec5bba77001ffa8d946911d5c529
 

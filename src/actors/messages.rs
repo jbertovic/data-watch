@@ -1,3 +1,4 @@
+use crate::SharedVar;
 use xactor::*;
 use serde::Deserialize;
 
@@ -8,7 +9,8 @@ pub struct RequestSchedule
     pub source_name: String,
     pub api_url: String,
     pub interval_sec: u64,
-    pub jmespatch_query: String
+    pub jmespatch_query: String,
+    pub storage_var: SharedVar,
 }
 
 #[message]

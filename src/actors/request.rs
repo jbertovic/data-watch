@@ -1,3 +1,4 @@
+use crate::SharedVar;
 use std::collections::HashMap;
 use std::time::UNIX_EPOCH;
 use std::time::SystemTime;
@@ -34,6 +35,7 @@ pub struct RequestJson {
     source_name: String,
     request: Option<Request>,
     translation: Option<Expression<'static>>,
+    storage_var: Option<SharedVar>,
 }
 
 #[async_trait]
@@ -52,7 +54,8 @@ impl Handler<RequestSchedule> for RequestJson {
         debug!("<RequestSchedule> received: {:?}", msg);
         info!("<RequestSchedule> received: {}", msg.source_name);
         self.source_name = msg.source_name;
-        self.request = Some(surf::get(msg.api_url).build());
+        self.storage_var = Some(msg.storage_var);
+        self.request = Some(surf::get(self.replace_variable(&msg.api_url)).build());
         self.translation = Some(jmespatch::compile(msg.jmespatch_query.as_ref()).unwrap());
         self.run_request().await;
         ctx.send_interval(Refresh{}, Duration::from_secs(msg.interval_sec));
@@ -134,4 +137,27 @@ impl RequestJson {
         }
     }
 
+    fn replace_variable(&self, text: &str) -> String {
+        // locate any global variable placeholder [[ ]] and find variable name
+        // replace if variable exists
+        let mut newtext = text.to_owned();
+        if let Some(start) = text.find("[[") {
+            if let Some(end) = text.find("]]") {
+                if start<end {
+                    let variable = self.storage_var.as_ref().unwrap().read().unwrap();
+                    if let Some(replaceto) = variable.get(&text[start+2..end]) {
+                        newtext = text.replace(&text[start..end+2], replaceto);
+                    }
+                    else {
+                        newtext = text.replace(&text[start..end+2], "");
+                    }
+                }
+            }
+        }
+        
+        newtext
+    }
+
+
 }
+
