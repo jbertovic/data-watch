@@ -13,3 +13,11 @@ pub use scheduler::Scheduler as Scheduler;
 pub use request::RequestJson as RequestJson;
 pub use stdoutwriter::StdoutWriter as StdoutWriter;
 pub use csvwriter::CsvWriter as CsvWriter;
+
+
+/// Defines the type of action on any responses received from requests
+#[derive(Debug, Clone)]
+pub enum ResponseAction {
+    PUBLISHDATA,
+    STOREVARIABLE,
+}

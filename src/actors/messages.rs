@@ -1,9 +1,9 @@
 use crate::SharedVar;
 use xactor::*;
-use serde::Deserialize;
+use super::ResponseAction;
 
 #[message]
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct RequestSchedule
 {
     pub source_name: String,
@@ -11,6 +11,7 @@ pub struct RequestSchedule
     pub interval_sec: u64,
     pub jmespatch_query: String,
     pub storage_var: SharedVar,
+    pub response_action: ResponseAction,
 }
 
 #[message]
