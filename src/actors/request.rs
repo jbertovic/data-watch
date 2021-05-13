@@ -1,5 +1,4 @@
-use crate::SharedVar;
-use crate::actors::{DataResponse, RequestSchedule, Refresh, ResponseAction};
+use crate::actors::{DataResponse, RequestSchedule, Refresh, ResponseAction, RequestType};
 use std::collections::HashMap;
 use std::time::UNIX_EPOCH;
 use std::time::SystemTime;
@@ -7,9 +6,9 @@ use std::time::Duration;
 use async_trait::async_trait;
 use xactor::*;
 use jmespatch::Expression;
-// use crate::interpreter::interpret2;
-use surf::Request;
 use log::{debug, info};
+use http_types::mime;
+use percent_encoding::{NON_ALPHANUMERIC, percent_encode};
 
 /// Creates a basic request that runs on a schedule and broadcasts `data_ts`
 
@@ -28,15 +27,11 @@ use log::{debug, info};
 /// <Ping>
 
 // IDEA: if things get slow, can we share a client amongst the actors or send the request to a separate broker who handles requests
-// IDEA: or store the client state
+// IDEA: or store the client state.  currently the request is rebuilt each time
 
-#[derive(Default)]
 pub struct RequestJson {
-    source_name: String,
-    request: Option<Request>,
-    translation: Option<Expression<'static>>,
-    storage_var: Option<SharedVar>,
-    response_action: Option<ResponseAction>,
+    translation: Expression<'static>,
+    request_description: RequestSchedule,
 }
 
 #[async_trait]
@@ -54,11 +49,6 @@ impl Handler<RequestSchedule> for RequestJson {
     async fn handle(&mut self, ctx: &mut Context<Self>, msg: RequestSchedule) {
         debug!("<RequestSchedule> received: {:?}", msg);
         info!("<RequestSchedule> received: {}", msg.source_name);
-        self.source_name = msg.source_name;
-        self.storage_var = Some(msg.storage_var);
-        self.response_action = Some(msg.response_action);
-        self.request = Some(surf::get(self.replace_variable(&msg.api_url)).build());
-        self.translation = Some(jmespatch::compile(msg.jmespatch_query.as_ref()).unwrap());
         self.run_request().await;
         ctx.send_interval(Refresh{}, Duration::from_secs(msg.interval_sec));
     }
@@ -73,12 +63,41 @@ impl Handler<Refresh> for RequestJson {
 }
 
 impl RequestJson {
-    /// use http client to make request
-    async fn run_request(&self) {
-        let response = surf::client().recv_string(self.request.clone().unwrap()).await.unwrap();
-        debug!("Response received: {:?}", response);
 
-        match self.response_action.as_ref().unwrap() {
+    pub fn new(request_description: RequestSchedule) -> Self {
+
+        let translation = jmespatch::compile(request_description.jmespatch_query.as_ref()).unwrap();
+
+        RequestJson {
+            translation,
+            request_description,
+        }
+    }
+
+    /// use http client to make request
+    async fn run_request(&mut self) {
+
+        // build body if it exists and attach
+        // set mime type to form
+        // swap variables in for [[ ]]
+        let api_url = self.replace_variable(&self.request_description.api_url, false);
+
+        let request = match self.request_description.request_type {
+            RequestType::GET => surf::get(api_url),
+            RequestType::POST => {
+                let body = match self.request_description.body.clone() {
+                    Some(b) => self.replace_variable(&b, true),
+                    None => String::from(""),
+                };
+                surf::post(api_url).body(body).content_type(mime::FORM)
+            }
+        };
+
+        let response = request.recv_string().await.unwrap();
+
+        debug!("Response received: {:?}", &response);
+
+        match &self.request_description.response_action {
             ResponseAction::PUBLISHDATA => {
                 let data_received = self.parse_json(&response);
                 self.publish_data(data_received).await;
@@ -103,12 +122,12 @@ impl RequestJson {
     /// { measure_name: "", measure_data: {measure_desc1: measure_value1, measure_desc2: measure_value2} }
     /// 
     /// 
-    /// Return should be Hashmap<&str, Vec<(&str, f64)>
+    /// Return should be Hashmap<String, Vec<(String, f64)>
     /// <measure_name, Vec<measure_desc, measure_value)>>
     /// 
     fn parse_json(&self, json_response: &str) -> HashMap<String, Vec<(String, f64)>> {
         let parsed_json = jmespatch::Variable::from_json(json_response).unwrap();
-        let result = self.translation.as_ref().unwrap().search(parsed_json).unwrap();
+        let result = self.translation.search(parsed_json).unwrap();
         let mut out = HashMap::new();
         debug!("Parsed result: {:?}", result);
         // decide if array or object (ie multiple measures or one measure with multiple data descriptions)
@@ -137,7 +156,7 @@ impl RequestJson {
             for data in entry.1 {
                 broker.publish(
                     DataResponse{
-                        source_name: self.source_name.to_owned(),
+                        source_name: self.request_description.source_name.to_owned(),
                         measure_name: measure_name.to_owned(),
                         measure_desc: data.0,
                         measure_value: data.1,
@@ -156,26 +175,30 @@ impl RequestJson {
 
     fn store_variable(&self, json_response: &str) {
         let parsed_json = jmespatch::Variable::from_json(json_response).unwrap();
-        let result = self.translation.as_ref().unwrap().search(parsed_json).unwrap();
+        let result = self.translation.search(parsed_json).unwrap();
         debug!("Parsed result: {:?}", result);
         if result.is_object() {
-            let mut storage = self.storage_var.as_ref().unwrap().write().unwrap();
+            let mut storage = self.request_description.storage_var.write().unwrap();
             for entry in result.as_object().unwrap() {
                 storage.insert(entry.0.to_owned(), entry.1.as_string().unwrap().to_owned());
             }
         }
     }
 
-    fn replace_variable(&self, text: &str) -> String {
+    // TODO: Variable needs to be urlencoded or at least have the option if placed in url query or body
+    fn replace_variable(&self, text: &str, encode: bool) -> String {
         // locate any global variable placeholder [[ ]] and find variable name
         // replace if variable exists
         let mut newtext = text.to_owned();
         if let Some(start) = text.find("[[") {
             if let Some(end) = text.find("]]") {
                 if start<end {
-                    let variable = self.storage_var.as_ref().unwrap().read().unwrap();
+                    let variable = self.request_description.storage_var.read().unwrap();
                     if let Some(replaceto) = variable.get(&text[start+2..end]) {
-                        newtext = text.replace(&text[start..end+2], replaceto);
+                        newtext = match encode {
+                            true => text.replace(&text[start..end+2], &percent_encode(replaceto.as_bytes(), NON_ALPHANUMERIC).to_string()),
+                            false => text.replace(&text[start..end+2], replaceto)
+                        };
                     }
                     else {
                         newtext = text.replace(&text[start..end+2], "");
@@ -196,16 +219,21 @@ mod tests {
     #[test]
     fn json_parsing_variables() {
         let json_raw = r#" { "variable_name": "name", "variable_data": "data" } "#;
-        let request = RequestJson {
-            source_name: String::from("Test"),
-            request: None,
-            translation: Some(jmespatch::compile("{ variable_data: variable_data, variable_name: variable_name }").unwrap()),
-            storage_var: Some(Arc::new(RwLock::new(HashMap::new()))),
-            response_action: None,
-        };
+        let request = RequestJson::new(
+            RequestSchedule {
+                source_name: String::from("Test"),
+                api_url: String::new(),
+                request_type: RequestType::GET,
+                body: None,
+                interval_sec: 0,
+                jmespatch_query: String::from("{ variable_data: variable_data, variable_name: variable_name }"),
+                storage_var: Arc::new(RwLock::new(HashMap::new())),
+                response_action: ResponseAction::STOREVARIABLE,
+            }
+        );
         request.store_variable(json_raw);
         {
-            let reader = request.storage_var.as_ref().unwrap().read().unwrap();
+            let reader = request.request_description.storage_var.read().unwrap();
             assert_eq!(reader.get("variable_name").unwrap(), "name");
             assert_eq!(reader.get("variable_data").unwrap(), "data");
         }
@@ -215,7 +243,7 @@ mod tests {
     fn json_parsing_single_dataresponse() {
         // OR Single measure in one query (includes multiple measure types)
         // { measure_name: "", measure_data: {measure_desc1: measure_value1, measure_desc2: measure_value2} }
-        // Return should be Hashmap<&str, Vec<(&str, f64)>
+        // Return should be Hashmap<string, Vec<(String, f64)>
         // <measure_name, Vec<measure_desc, measure_value)>>
         let json_raw = r#" 
         { 
@@ -226,17 +254,22 @@ mod tests {
                 "desc2": 2.0
             }
         } "#;
-        let request = RequestJson {
-            source_name: String::from("Test2"),
-            request: None,
-            translation: Some(jmespatch::compile("{measure_name: measure_name, measure_data: measure_data}").unwrap()),
-            storage_var: None,
-            response_action: None,
-        };
+
+        let request = RequestJson::new(
+            RequestSchedule {
+                source_name: String::from("Test2"),
+                api_url: String::new(),
+                request_type: RequestType::GET,
+                body: None,
+                interval_sec: 0,
+                jmespatch_query: String::from("{measure_name: measure_name, measure_data: measure_data}"),
+                storage_var: Arc::new(RwLock::new(HashMap::new())),
+                response_action: ResponseAction::PUBLISHDATA,
+            }
+        );
 
         let datahash = request.parse_json(&json_raw);
-        dbg!(&datahash);
-
+        assert_eq!(datahash.get(&String::from("name")).unwrap(), &vec!((String::from("desc1"), 1.0 as f64), (String::from("desc2"), 2.0 as f64)));
     }
 
 }

@@ -21,3 +21,9 @@ pub enum ResponseAction {
     PUBLISHDATA,
     STOREVARIABLE,
 }
+
+#[derive(Debug, Clone)]
+pub enum RequestType {
+    GET,
+    POST,
+}

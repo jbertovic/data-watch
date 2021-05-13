@@ -4,7 +4,7 @@ use std::time::Duration;
 use std::env;
 use xactor::Actor;
 use async_std::task;
-use data_watch::actors::{StdoutWriter, RequestSchedule, Scheduler, Stop, ResponseAction};
+use data_watch::actors::{StdoutWriter, RequestSchedule, Scheduler, Stop, ResponseAction, RequestType};
 use data_watch::SharedVar;
 
 // Example that grabs current weather from openweathermaps.org
@@ -45,6 +45,8 @@ async fn main() -> Result<(), xactor::Error> {
     let request_message = RequestSchedule{ 
         source_name: String::from("Weather"), 
         api_url: String::from("https://api.openweathermap.org/data/2.5/weather?q=Houston&units=imperial&appid=[[WEATHER_KEY]]"), 
+        request_type: RequestType::GET,
+        body: None,
         interval_sec: 60,
         jmespatch_query: String::from("merge({measure_name: name},{measure_data: main})"), 
         storage_var: shared_variables.clone(),

@@ -45,8 +45,11 @@ impl Handler<RequestSchedule> for Scheduler {
         info!("<RequestSchedule> received: {}", msg.source_name);
         // create new actor to manage request
         self.scheduled.push(msg.clone());
-        let newactor = RequestJson::default().start().await.unwrap();
+
+        let newactor = RequestJson::new(msg.clone()).start().await.unwrap();
+
         self.actors.push(newactor.clone());
+
         newactor.send(msg).unwrap();
     }
 }
