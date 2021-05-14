@@ -8,9 +8,12 @@ use data_watch::actors::{StdoutWriter, RequestSchedule, Scheduler, Stop, Respons
 use data_watch::SharedVar;
 
 // Example that grabs current quotes from tdameritrade's api using current token
-// Example includes using refresh token to initialize a new token that is renewed every 30 min
-// A valid refresh token is stored in Environment Variable TDREFRESHTOKEN and TDCLIENTID
+//
+// Need to request token using a valid refresh token which is stored in shared_variables
+// Token can then be used to make quote requests.  The active token will be renewed every 1700 seconds
+//
 // Example uses both a GET request for the quotes and a POST request for refreshing new Token
+// and shows examples of using shared_variables
 // 
 // API documentation at https://developer.tdameritrade.com/
 
@@ -23,14 +26,14 @@ async fn main() -> Result<(), xactor::Error> {
     
     let refresh_token = env::var("TDREFRESHTOKEN")
         .expect("Need Refresh Token for TDAmeritrade");
-    // let client_id = env::var("TDCLIENTID")
-    //     .expect("Need TD Client ID for TDAmeritrade");
+    let client_id = env::var("TDCLIENTID")
+        .expect("Need TD Client ID for TDAmeritrade");
     
     // store global variables - usually API keys
     {
         let mut storage = shared_variables.write().unwrap();
         storage.insert(String::from("TDREFRESHTOKEN"), refresh_token);
-        // storage.insert(String::from("TDCLIENTID"), client_id);
+        storage.insert(String::from("TDCLIENTID"), client_id);
     }
 
     // start scheduler
@@ -51,12 +54,12 @@ async fn main() -> Result<(), xactor::Error> {
     // example using POST request configuration and response_action into variable
     // TODO: need to add header or body and request type: GET / POST
 
-    // Build Request 
+    // Build Request to use refresh token to get a valid access token
     let request_message = RequestSchedule{ 
         source_name: String::from("TD_AUTH"), 
         api_url: String::from("https://api.tdameritrade.com/v1/oauth2/token"), 
         request_type: RequestType::POST,
-        body: Some(String::from("grant_type=refresh_token&refresh_token=[[TDREFRESHTOKEN]]&client_id=J3ROAVSNNFTLC9RJE4BD2DO2WJ9JE4DG")),
+        body: Some(String::from("grant_type=refresh_token&refresh_token=[[TDREFRESHTOKEN]]&client_id=[[TDCLIENTID]]")),
         interval_sec: 1700,
         jmespatch_query: String::from("{ TDTOKEN: access_token }"), 
         storage_var: shared_variables.clone(),
@@ -65,6 +68,15 @@ async fn main() -> Result<(), xactor::Error> {
 
     // Send Request to scheduler
     scheduler_addr.send(request_message)?;
+
+    // Build request to use valid token to grab current quotes on a 1 minute cycle
+
+    //
+    //
+    //
+    //
+    //
+
 
     task::sleep(Duration::from_secs(10)).await;
 

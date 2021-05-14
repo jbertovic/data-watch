@@ -4,6 +4,12 @@ use std::sync::Arc;
 
 pub mod actors;
 
+
+// Utility
+// Collection of functions to store variables in shared storage, parse json to match data model, and 
+// read stored variables to update strings 
+pub mod utility;
+
 pub type SharedVar = Arc<RwLock<HashMap<String, String>>>;
 
 // Example data structures

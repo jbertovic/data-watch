@@ -24,7 +24,7 @@ User/Config SENDS RequestJson(message) TO Scheduler(actor)
 Scheduler(actor) SEND RequestJson(message) TO RequestJson(actor)
 
 RequestJson(actor) SEND Refresh(message) TO RequestJson(actor)
-RequestJson(actor) PUBLISH DataResponse(message)
+RequestJson(actor) RequestAction: PUBLISH DataResponse(message) OR STOREVARIABLE
 ```
 
 
