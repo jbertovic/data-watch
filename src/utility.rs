@@ -28,22 +28,29 @@ pub fn parse_json(expression: &jmespatch::Expression<'static>, json_response: &s
     debug!("Parsed result: {:?}", result);
     // decide if array or object (ie multiple measures or one measure with multiple data descriptions)
     if result.is_object() {
-        let measure_name = result.as_object().unwrap().get("measure_name").unwrap().as_string().unwrap().to_owned();
-        let mut data_points = Vec::new();
-        for entry in result.as_object().unwrap().get("measure_data").unwrap().as_object().unwrap() {
-            data_points.push((
-                entry.0.to_owned(),
-                entry.1.as_number().unwrap(),
-            ))
-        }
-        out.insert(measure_name, data_points);
+        let parsed = parse_one_measure(&result);
+        out.insert(parsed.0, parsed.1);
     }
     else if result.is_array() {
-        unimplemented!();
+        for each_result in result.as_array().unwrap() {
+            let parsed = parse_one_measure(&each_result);
+            out.insert(parsed.0, parsed.1);
+        }
     }
     out
 }
 
+fn parse_one_measure(result: &jmespatch::Variable) -> (String, Vec<(String, f64)>) {
+    let measure_name = result.as_object().unwrap().get("measure_name").unwrap().as_string().unwrap().to_owned();
+    let mut data_points = Vec::new();
+    for entry in result.as_object().unwrap().get("measure_data").unwrap().as_object().unwrap() {
+        data_points.push((
+            entry.0.to_owned(),
+            entry.1.as_number().unwrap(),
+        ))
+    }
+    (measure_name, data_points)
+}
 
 /// Update string to replace [[VARIABLE]] with a variable stored in shared variables
 /// Created as recursive funciton to add multiple variables to one string
@@ -127,11 +134,45 @@ mod tests {
                 "desc2": 2.0
             }
         } "#;
-
-        let expression = jmespatch::compile("{measure_name: measure_name, measure_data: measure_data}").unwrap();
+        let expression = jmespatch::compile("@").unwrap();
         let datahash = parse_json(&expression, &json_raw);
         assert_eq!(datahash.get(&String::from("name")).unwrap(), &vec!((String::from("desc1"), 1.0 as f64), (String::from("desc2"), 2.0 as f64)));
     }
+
+    #[test]
+    fn json_parsing_multiple_dataresponse() {
+        // OR Single measure in one query (includes multiple measure types)
+        // { measure_name: "", measure_data: {measure_desc1: measure_value1, measure_desc2: measure_value2} }
+        // Return should be Hashmap<string, Vec<(String, f64)>
+        // <measure_name, Vec<measure_desc, measure_value)>>
+        let json_raw = r#" 
+        [
+            { 
+                "measure_name": "name1", 
+                "measure_data": 
+                {
+                    "desc1": 1.0,
+                    "desc2": 2.0
+                }
+            },
+            { 
+                "measure_name": "name2", 
+                "measure_data": 
+                {
+                    "desc1": 3.0,
+                    "desc2": 4.0
+                }
+            }
+        ] "#;
+
+        let expression = jmespatch::compile("@").unwrap();
+        let datahash = parse_json(&expression, &json_raw);
+        assert_eq!(datahash.get(&String::from("name1")).unwrap(), &vec!((String::from("desc1"), 1.0 as f64), (String::from("desc2"), 2.0 as f64)));
+        assert_eq!(datahash.get(&String::from("name2")).unwrap(), &vec!((String::from("desc1"), 3.0 as f64), (String::from("desc2"), 4.0 as f64)));
+    }
+
+
+
 
     #[test]
     fn swap_one_variable() {

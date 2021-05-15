@@ -34,6 +34,7 @@ async fn main() -> Result<(), xactor::Error> {
         let mut storage = shared_variables.write().unwrap();
         storage.insert(String::from("TDREFRESHTOKEN"), refresh_token);
         storage.insert(String::from("TDCLIENTID"), client_id);
+        storage.insert(String::from("TDQUOTESYMBOLS"), String::from("TRP,INTC,SPY,LIT,RIOT,VZ"));
     }
 
     // start scheduler
@@ -55,11 +56,12 @@ async fn main() -> Result<(), xactor::Error> {
     // TODO: need to add header or body and request type: GET / POST
 
     // Build Request to use refresh token to get a valid access token
-    let request_message = RequestSchedule{ 
+    let request_token_refresh = RequestSchedule{ 
         source_name: String::from("TD_AUTH"), 
         api_url: String::from("https://api.tdameritrade.com/v1/oauth2/token"), 
         request_type: RequestType::POST,
         body: Some(String::from("grant_type=refresh_token&refresh_token=[[TDREFRESHTOKEN]]&client_id=[[TDCLIENTID]]")),
+        header: None,
         interval_sec: 1700,
         jmespatch_query: String::from("{ TDTOKEN: access_token }"), 
         storage_var: shared_variables.clone(),
@@ -67,16 +69,26 @@ async fn main() -> Result<(), xactor::Error> {
     };
 
     // Send Request to scheduler
-    scheduler_addr.send(request_message)?;
+    scheduler_addr.send(request_token_refresh)?;
 
-    // Build request to use valid token to grab current quotes on a 1 minute cycle
+    // need to wait for authorization above for request below to work
+    task::sleep(Duration::from_secs(1)).await;
 
-    //
-    //
-    //
-    //
-    //
+    // Build request to use valid token to grab current quotes on a 15 minute cycle
+    let request_stock_quotes = RequestSchedule{ 
+        source_name: String::from("TD_AUTH"), 
+        api_url: String::from("https://api.tdameritrade.com/v1/marketdata/quotes?symbol=[[TDQUOTESYMBOLS]]"), 
+        request_type: RequestType::GET,
+        body: None,
+        header: Some((String::from("Authorization"), String::from("Bearer [[TDTOKEN]]"))),
+        interval_sec: 15*60,
+        jmespatch_query: String::from("*.{measure_name: symbol, measure_data: {lastPrice: lastPrice, highPrice: highPrice, lowPrice: lowPrice, mark: mark}}"), 
+        storage_var: shared_variables.clone(),
+        response_action: ResponseAction::PUBLISHDATA,
+    };
 
+    // Send Request to scheduler
+    scheduler_addr.send(request_stock_quotes)?;
 
     task::sleep(Duration::from_secs(10)).await;
 

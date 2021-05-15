@@ -47,6 +47,7 @@ async fn main() -> Result<(), xactor::Error> {
         api_url: String::from("https://api.openweathermap.org/data/2.5/weather?q=Houston&units=imperial&appid=[[WEATHER_KEY]]"), 
         request_type: RequestType::GET,
         body: None,
+        header: None,
         interval_sec: 60,
         jmespatch_query: String::from("merge({measure_name: name},{measure_data: main})"), 
         storage_var: shared_variables.clone(),

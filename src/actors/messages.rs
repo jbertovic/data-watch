@@ -10,6 +10,7 @@ pub struct RequestSchedule
     pub api_url: String,
     pub request_type: RequestType,
     pub body: Option<String>,
+    pub header: Option<(String, String)>,
     pub interval_sec: u64,
     pub jmespatch_query: String,
     pub storage_var: SharedVar,

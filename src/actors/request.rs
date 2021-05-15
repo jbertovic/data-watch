@@ -77,9 +77,9 @@ impl RequestJson {
         // build body if it exists and attach
         // set mime type to form
         // swap variables in for [[ ]]
-        let api_url = utility::swap_variable(&self.request_description.storage_var, &self.request_description.api_url, false);
+        let api_url = utility::swap_variable(&self.request_description.storage_var, &self.request_description.api_url, true);
 
-        let request = match self.request_description.request_type {
+        let mut request = match self.request_description.request_type {
             RequestType::GET => surf::get(api_url),
             RequestType::POST => {
                 let body = match self.request_description.body.clone() {
@@ -88,6 +88,11 @@ impl RequestJson {
                 };
                 surf::post(api_url).body(body).content_type(mime::FORM)
             }
+        };
+
+        // set header
+        if let Some((key, value)) = &self.request_description.header {
+            request = request.header(key.as_str(), utility::swap_variable(&self.request_description.storage_var, &value, false));
         };
 
         let response = request.recv_string().await.unwrap();
