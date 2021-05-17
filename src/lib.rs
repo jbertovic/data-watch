@@ -17,21 +17,21 @@ pub type SharedVar = Arc<RwLock<HashMap<String, String>>>;
 // datasource: TDAPI, name: TRP, desc: last, value: 51.00
 
 
-//EXAMPLES
+// EXAMPLES
+// TODO: Add Bitcoin, Ethureum and Compound Quote, also include DEFI compound info
 // TODO: Weather - store variable in memory cache
-// TODO: Weather - use variable from memory cache in path of url
 // TODO: Quote - get token authorization from refresh key and store into memory cache
-// TODO: Quote - get quotes for a series of stocks
 // TODO: Configuration can be saved and loaded - example combining Weather and Quote
 
 //PROGRAM
-// TODO: create universal variables to store in memory cache
-// TODO: include a way to translate URL to combine variables in path
-// TODO: add memory cache for measures that is live over a finite time, able to register which variables
+// TODO: add memory cache actor for measures that is live over a finite time, able to register which variables
 // TODO: convert measure (function) or combination of measures to calculated new measure
-// TODO: datastore to csv (use state for filename) - specify which measures and which file
+// TODO: datastore to csv (use state for filename) - specify which measures and which file - NOT ALL measures
 // TODO: program initiation structure to keep track of actors to minimize users of library having to initialize everything
 // TODO: an elegant way to exit the program
+// TODO: a way to interact with the program either through CLI or server or both
+// TODO: better Error handling - think about all the things that could go wrong and create error type or anyhow
+// TODO: better way to deal with dates  (maybe a utility folder with utility.rs -> parsing, dates)
 
 // FUTURE: datastore to postgres database
 // FUTURE: add server to manage scheduler
