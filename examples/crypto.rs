@@ -8,12 +8,12 @@ use data_watch::actors::{StdoutWriter, RequestSchedule, Scheduler, Stop, Respons
 use data_watch::SharedVar;
 
 // Example that grabs current quotes from coinbase api for Bitcoin, Ethureum and Compound
-// Also includes data for compound Defi held in wallet
+// Also includes data for compound Defi held in wallet ata specified Wallet public address
 //
 // Coinbase API for BTC: https://api.pro.coinbase.com/products/BTC-USD/ticker
 // Coinbase API for ETH: https://api.pro.coinbase.com/products/ETH-USD/ticker
 // Coinbase API for COMP: https://api.pro.coinbase.com/products/COMP-USD/ticker
-// Compound API: 
+// Compound API: https://api.compound.finance/api/v2/account?addresses[]=[[ETHPUBADDRESS]]
 
 
 #[async_std::main]
@@ -111,14 +111,7 @@ async fn main() -> Result<(), xactor::Error> {
         // Send Request to scheduler
         scheduler_addr.send(compound)?;
 
-
     task::sleep(Duration::from_secs(10)).await;
-
-    // print global variables 
-    {
-        let reader = shared_variables.read().unwrap();
-        println!("{:?}", reader);
-    }
 
     scheduler_addr.send(Stop)?;    
 

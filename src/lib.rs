@@ -18,9 +18,9 @@ pub type SharedVar = Arc<RwLock<HashMap<String, String>>>;
 
 
 // EXAMPLES
-// TODO: Add Bitcoin, Ethureum and Compound Quote, also include DEFI compound info
-// TODO: Weather - store variable in memory cache
-// TODO: Quote - get token authorization from refresh key and store into memory cache
+// TODO: Add Compound interest rates tracking
+// TODO: Weather,Crypto,Stocks - store variable in memory cache 
+// TODO: Selective printing or csv storage
 // TODO: Configuration can be saved and loaded - example combining Weather and Quote
 
 //PROGRAM

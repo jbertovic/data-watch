@@ -35,6 +35,7 @@ async fn main() -> Result<(), xactor::Error> {
         storage.insert(String::from("TDREFRESHTOKEN"), refresh_token);
         storage.insert(String::from("TDCLIENTID"), client_id);
         storage.insert(String::from("TDQUOTESYMBOLS"), String::from("TRP,INTC,SPY,LIT,RIOT,VZ"));
+        storage.insert(String::from("TDQUOTEINDEX"), String::from("$SPX.X,$VIX.X"));
     }
 
     // start scheduler
@@ -76,7 +77,7 @@ async fn main() -> Result<(), xactor::Error> {
 
     // Build request to use valid token to grab current quotes on a 15 minute cycle
     let request_stock_quotes = RequestSchedule{ 
-        source_name: String::from("TD_AUTH"), 
+        source_name: String::from("TD_QUOTE"), 
         api_url: String::from("https://api.tdameritrade.com/v1/marketdata/quotes?symbol=[[TDQUOTESYMBOLS]]"), 
         request_type: RequestType::GET,
         body: None,
@@ -90,13 +91,23 @@ async fn main() -> Result<(), xactor::Error> {
     // Send Request to scheduler
     scheduler_addr.send(request_stock_quotes)?;
 
-    task::sleep(Duration::from_secs(10)).await;
+    // Build request to use valid token to grab current quotes on a 15 minute cycle
+    let request_index_quotes = RequestSchedule{ 
+        source_name: String::from("TD_QUOTE"), 
+        api_url: String::from("https://api.tdameritrade.com/v1/marketdata/quotes?symbol=[[TDQUOTEINDEX]]"), 
+        request_type: RequestType::GET,
+        body: None,
+        header: Some((String::from("Authorization"), String::from("Bearer [[TDTOKEN]]"))),
+        interval_sec: 15*60,
+        jmespatch_query: String::from("*.{measure_name: symbol, measure_data: {lastPrice: lastPrice, highPrice: highPrice, lowPrice: lowPrice, lastPrice: lastPrice}}"), 
+        storage_var: shared_variables.clone(),
+        response_action: ResponseAction::PUBLISHDATA,
+    };
 
-    // print global variables 
-    {
-        let reader = shared_variables.read().unwrap();
-        println!("{:?}", reader);
-    }
+    // Send Request to scheduler
+    scheduler_addr.send(request_index_quotes)?;
+
+    task::sleep(Duration::from_secs(10)).await;
 
     scheduler_addr.send(Stop)?;    
 
