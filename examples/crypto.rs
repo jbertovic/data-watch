@@ -111,7 +111,23 @@ async fn main() -> Result<(), xactor::Error> {
         // Send Request to scheduler
         scheduler_addr.send(compound)?;
 
-    task::sleep(Duration::from_secs(10)).await;
+        // Build Request to Retreive Crypto Currency prices from coinbase
+        let compound2 = RequestSchedule{ 
+            source_name: String::from("DEFI_COMPOUND"), 
+            api_url: String::from("https://api.compound.finance/api/v2/ctoken"), 
+            request_type: RequestType::GET,
+            body: None,
+            header: None,
+            interval_sec: 60*15,
+            jmespatch_query: String::from("cToken[?symbol==`\"cUSDC\"`||symbol==`\"cDAI\"`].{measure_name: symbol, measure_data: {supply_rate: to_number(supply_rate.value)}}"), 
+            storage_var: shared_variables.clone(),
+            response_action: ResponseAction::PUBLISHDATA,
+        };
+    
+        // Send Request to scheduler
+        scheduler_addr.send(compound2)?;
+
+        task::sleep(Duration::from_secs(10)).await;
 
     scheduler_addr.send(Stop)?;    
 

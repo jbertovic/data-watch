@@ -18,7 +18,6 @@ pub type SharedVar = Arc<RwLock<HashMap<String, String>>>;
 
 
 // EXAMPLES
-// TODO: Add Compound interest rates tracking
 // TODO: Weather,Crypto,Stocks - store variable in memory cache 
 // TODO: Selective printing or csv storage
 // TODO: Configuration can be saved and loaded - example combining Weather and Quote
@@ -34,10 +33,11 @@ pub type SharedVar = Arc<RwLock<HashMap<String, String>>>;
 // TODO: better way to deal with dates  (maybe a utility folder with utility.rs -> parsing, dates)
 
 // FUTURE: datastore to postgres database
+// FUTURE: Add an ability to push items to data-watch from outside
 // FUTURE: add server to manage scheduler
 // FUTURE: register alert to watch data stream
 // FUTURE: react to alert
-// FUTURE: add ability to fetch events/transactions that aren't timestamp related
+// FUTURE: (NOT sure if this belongs) add ability to fetch events/transactions that aren't timestamp related
 
 
 // Playground links
