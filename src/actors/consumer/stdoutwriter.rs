@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use xactor::*;
-use super::messages::{DataResponse};
+use crate::actors::messages::{DataResponse};
 
 /// Outputs to writer which is currently stdout, but could switch in the future
 /// could include state to use with writer
@@ -15,10 +15,10 @@ use super::messages::{DataResponse};
 
 
 #[derive(Default)]
-pub struct StdoutWriter;
+pub struct StdoutConsumer;
 
 #[async_trait]
-impl Actor for StdoutWriter {
+impl Actor for StdoutConsumer {
     async fn started(&mut self, ctx: &mut Context<Self>) -> Result<()> {
         ctx.subscribe::<DataResponse>().await?;
         // println!("Actor::DataWriter started");
@@ -27,7 +27,7 @@ impl Actor for StdoutWriter {
 }
 
 #[async_trait]
-impl Handler<DataResponse> for StdoutWriter {
+impl Handler<DataResponse> for StdoutConsumer {
     async fn handle(&mut self, _ctx: &mut Context<Self>, msg: DataResponse) {
         // println!("Actor::DataWriter message<DataResponse> received");
         println!("{:?}", msg);

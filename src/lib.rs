@@ -18,13 +18,15 @@ pub type SharedVar = Arc<RwLock<HashMap<String, String>>>;
 
 
 // EXAMPLES
+// TODO: schedule defined using cron formatting
 // TODO: Weather,Crypto,Stocks - store variable in memory cache 
 // TODO: Selective printing or csv storage
 // TODO: Configuration can be saved and loaded - example combining Weather and Quote
+// TODO: Alert consumer that matches criteria
 
 //PROGRAM
 // TODO: add memory cache actor for measures that is live over a finite time, able to register which variables
-// TODO: convert measure (function) or combination of measures to calculated new measure
+// TODO: convert measure (function) or combination of measures to calculated new measure - New Producer
 // TODO: datastore to csv (use state for filename) - specify which measures and which file - NOT ALL measures
 // TODO: program initiation structure to keep track of actors to minimize users of library having to initialize everything
 // TODO: an elegant way to exit the program

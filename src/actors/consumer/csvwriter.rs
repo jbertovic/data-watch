@@ -1,10 +1,3 @@
-/// Write to csv file and use name of measure for filename
-/// If file exists append to existing file
-/// Path is held in state
-/// 
-
-
-
 //  TODO: Have a file name created for name of measure set on initiation of actor
 //   - don't try to do this with every measure to store or you can combine measures to store
 //   - maybe keep a vector of names to store in file
@@ -13,7 +6,7 @@
 use async_trait::async_trait;
 use async_std::{fs::File, io::{BufWriter, prelude::WriteExt}};
 use xactor::*;
-use super::messages::DataResponse;
+use crate::actors::messages::DataResponse;
 use log::{info};
 
 /// Outputs to writer which is currently stdout, but could switch in the future
@@ -28,24 +21,24 @@ use log::{info};
 /// <Ping>
 
 
-pub struct CsvWriter {
+pub struct CsvConsumer {
     writer: BufWriter<File>,
 }
 
-impl CsvWriter {
-    pub fn new(writer: BufWriter<File>) -> CsvWriter {
-        CsvWriter {
+impl CsvConsumer {
+    pub fn new(writer: BufWriter<File>) -> CsvConsumer {
+        CsvConsumer {
             writer: writer,
         }
     }
 }
 
-impl Default for CsvWriter {
-   fn default() ->  CsvWriter {
+impl Default for CsvConsumer {
+   fn default() ->  CsvConsumer {
         async_std::task::block_on(
             async {
                 let file = File::create("data.csv").await.unwrap();
-                CsvWriter {
+                CsvConsumer {
                     writer: BufWriter::new(file),
                 } 
             }
@@ -54,7 +47,7 @@ impl Default for CsvWriter {
 }
 
 #[async_trait]
-impl Actor for CsvWriter {
+impl Actor for CsvConsumer {
     async fn started(&mut self, ctx: &mut Context<Self>) -> Result<()> {
         info!("CsvWriter started");
         ctx.subscribe::<DataResponse>().await?;
@@ -63,7 +56,7 @@ impl Actor for CsvWriter {
 }
 
 #[async_trait]
-impl Handler<DataResponse> for CsvWriter {
+impl Handler<DataResponse> for CsvConsumer {
     async fn handle(&mut self, _ctx: &mut Context<Self>, msg: DataResponse) {
         // append to csv file stream
         self.writer.write(format!("\"{}\", \"{}\", \"{}\", {}, {}\n", 

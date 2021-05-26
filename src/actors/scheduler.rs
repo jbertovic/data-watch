@@ -1,8 +1,7 @@
 use async_trait::async_trait;
 use xactor::*;
-use super::RequestSchedule;
-use super::Stop;
-use super::RequestJson;
+use super::producer::WebProducer;
+use super::messages::{Stop, WebProducerSchedule};
 use log::{info, debug};
 
 /// Scheduler
@@ -22,8 +21,8 @@ use log::{info, debug};
 
 
 pub struct Scheduler {
-    scheduled: Vec<RequestSchedule>,
-    actors: Vec<Addr<RequestJson>>,
+    scheduled: Vec<WebProducerSchedule>,
+    actors: Vec<Addr<WebProducer>>,
 }
 
 #[async_trait]
@@ -39,14 +38,14 @@ impl Actor for Scheduler {
 }
 
 #[async_trait]
-impl Handler<RequestSchedule> for Scheduler {
-    async fn handle(&mut self, _ctx: &mut Context<Self>, msg: RequestSchedule) {
+impl Handler<WebProducerSchedule> for Scheduler {
+    async fn handle(&mut self, _ctx: &mut Context<Self>, msg: WebProducerSchedule) {
         debug!("message<RequestSchedule> received: {:?}", msg);
         info!("<RequestSchedule> received: {}", msg.source_name);
         // create new actor to manage request
         self.scheduled.push(msg.clone());
 
-        let newactor = RequestJson::new(msg.clone()).start().await.unwrap();
+        let newactor = WebProducer::new(msg.clone()).start().await.unwrap();
 
         self.actors.push(newactor.clone());
 

@@ -1,20 +1,20 @@
 use crate::SharedVar;
 use xactor::*;
-use super::{ResponseAction, RequestType};
+use super::producer::{ProducerAction, WebRequestType};
 
 #[message]
 #[derive(Debug, Clone)]
-pub struct RequestSchedule
+pub struct WebProducerSchedule
 {
     pub source_name: String,
     pub api_url: String,
-    pub request_type: RequestType,
+    pub request_type: WebRequestType,
     pub body: Option<String>,
     pub header: Option<(String, String)>,
     pub interval_sec: u64,
     pub jmespatch_query: String,
     pub storage_var: SharedVar,
-    pub response_action: ResponseAction,
+    pub response_action: ProducerAction,
 }
 
 #[message]

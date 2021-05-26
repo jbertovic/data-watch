@@ -4,7 +4,10 @@ use std::time::Duration;
 use std::env;
 use xactor::Actor;
 use async_std::task;
-use data_watch::actors::{StdoutWriter, RequestSchedule, Scheduler, Stop, ResponseAction, RequestType};
+use data_watch::actors::Scheduler;
+use data_watch::actors::messages::{WebProducerSchedule, Stop};
+use data_watch::actors::producer::{ProducerAction, WebRequestType};
+use data_watch::actors::consumer::StdoutConsumer;
 use data_watch::SharedVar;
 
 // Example that grabs current quotes from tdameritrade's api using current token
@@ -48,7 +51,7 @@ async fn main() -> Result<(), xactor::Error> {
     });
 
     // start datawriter to push output to screen
-    let _datawriter = StdoutWriter.start().await?;
+    let _datawriter = StdoutConsumer.start().await?;
 
     // start csvwriter to push output to csv file
     // let _csvwriter = CsvWriter::default().start().await?;
@@ -57,16 +60,16 @@ async fn main() -> Result<(), xactor::Error> {
     // TODO: need to add header or body and request type: GET / POST
 
     // Build Request to use refresh token to get a valid access token
-    let request_token_refresh = RequestSchedule{ 
+    let request_token_refresh = WebProducerSchedule{ 
         source_name: String::from("TD_AUTH"), 
         api_url: String::from("https://api.tdameritrade.com/v1/oauth2/token"), 
-        request_type: RequestType::POST,
+        request_type: WebRequestType::POST,
         body: Some(String::from("grant_type=refresh_token&refresh_token=[[TDREFRESHTOKEN]]&client_id=[[TDCLIENTID]]")),
         header: None,
         interval_sec: 1700,
         jmespatch_query: String::from("{ TDTOKEN: access_token }"), 
         storage_var: shared_variables.clone(),
-        response_action: ResponseAction::STOREVARIABLE,
+        response_action: ProducerAction::STOREVARIABLE,
     };
 
     // Send Request to scheduler
@@ -76,32 +79,32 @@ async fn main() -> Result<(), xactor::Error> {
     task::sleep(Duration::from_secs(1)).await;
 
     // Build request to use valid token to grab current quotes on a 15 minute cycle
-    let request_stock_quotes = RequestSchedule{ 
+    let request_stock_quotes = WebProducerSchedule{ 
         source_name: String::from("TD_QUOTE"), 
         api_url: String::from("https://api.tdameritrade.com/v1/marketdata/quotes?symbol=[[TDQUOTESYMBOLS]]"), 
-        request_type: RequestType::GET,
+        request_type: WebRequestType::GET,
         body: None,
         header: Some((String::from("Authorization"), String::from("Bearer [[TDTOKEN]]"))),
         interval_sec: 15*60,
         jmespatch_query: String::from("*.{measure_name: symbol, measure_data: {lastPrice: lastPrice, highPrice: highPrice, lowPrice: lowPrice, mark: mark}}"), 
         storage_var: shared_variables.clone(),
-        response_action: ResponseAction::PUBLISHDATA,
+        response_action: ProducerAction::PUBLISHDATA,
     };
 
     // Send Request to scheduler
     scheduler_addr.send(request_stock_quotes)?;
 
     // Build request to use valid token to grab current quotes on a 15 minute cycle
-    let request_index_quotes = RequestSchedule{ 
+    let request_index_quotes = WebProducerSchedule{ 
         source_name: String::from("TD_QUOTE"), 
         api_url: String::from("https://api.tdameritrade.com/v1/marketdata/quotes?symbol=[[TDQUOTEINDEX]]"), 
-        request_type: RequestType::GET,
+        request_type: WebRequestType::GET,
         body: None,
         header: Some((String::from("Authorization"), String::from("Bearer [[TDTOKEN]]"))),
         interval_sec: 15*60,
         jmespatch_query: String::from("*.{measure_name: symbol, measure_data: {lastPrice: lastPrice, highPrice: highPrice, lowPrice: lowPrice, lastPrice: lastPrice}}"), 
         storage_var: shared_variables.clone(),
-        response_action: ResponseAction::PUBLISHDATA,
+        response_action: ProducerAction::PUBLISHDATA,
     };
 
     // Send Request to scheduler

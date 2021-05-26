@@ -1,32 +1,52 @@
 # Developing in Real-time.  Not a useable product!
 
-Thoughts around building an Data Watch framework in Rust that would allow me to stream data from multiple API that would used for alerts, storage, or viewing.
+Thoughts around building an Data Watch framework in Rust that would allow me to stream data from in multiple ways that would used for alerts, storage, or viewing. Start with building
 
 Setup using an actor framework.
 
 
-# Starting Project
+## Starting Project
 
-1) Develop a generic way to descript API extraction requests and a data structure to return.
+- Able to define a way to extract different API endpoints into real-time data.
+- Develop ways to consume this data for different purposes.
+- Use a single Data Type to categorize a measure - start with f64.
+- Allow flexibility by holding global store of variables to pass to requests and for other purposes.
 
-2) Building out a scheduler to deal with managing multiple API endpoints on an interval
+Completed project should be able to (P)roduce data and (C)onsume data.  In an actor framework; (P)roducer will publish data and (C)onsumer will subscribe to data.
 
-3) Ability of pass a transpormation function that allows response to be converted to time series data
-
-4) Listen for clean data for storage in memory or store on disk/db
-
-
-# First Product - Actor and Message setup
+## First Product - Actor and Message setup
 
 ```
-User/Config SENDS RequestJson(message) TO Scheduler(actor) 
+User/Config SENDS (P)roducerRequest TO Scheduler(actor) 
 
-Scheduler(actor) SEND RequestJson(message) TO RequestJson(actor)
+Scheduler(actor) SEND (P)roducerRequest(message) TO Producer(actor)
 
-RequestJson(actor) SEND Refresh(message) TO RequestJson(actor)
-RequestJson(actor) RequestAction: PUBLISH DataResponse(message) OR STOREVARIABLE
+Producer(actor) SEND Refresh(message) TO Producer(actor): based on schedule
+Producer(actor) ACTION: PUBLISH DataResponse(message) OR STOREVARIABLE
 ```
 
+## Data format
+
+```
+pub struct DataResponse{
+    pub source_name: String,
+    pub measure_name: String,
+    pub measure_desc: String,
+    pub measure_value: f64,
+    pub timestamp: u64 
+}
+```
+
+## Producers
+
+- API JSON response request
+
+## Consumers
+- Stdout print data
+- CSV data storage
+- Memory cache
+- Alert criteria watch
+- DB storage
 
 
 
