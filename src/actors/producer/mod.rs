@@ -1,4 +1,5 @@
 mod webrequest;
+mod producer;
 
 pub use webrequest::WebProducer as WebProducer;
 
