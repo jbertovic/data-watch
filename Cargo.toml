@@ -15,6 +15,8 @@ log = "0.4"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 jmespatch = { version = "0.3.0", features = ["sync"] }
+cron = "0.9"
+chrono = "0.4"
 http-types = "2.11.1"
 percent-encoding = "2.1.0"
 

@@ -58,7 +58,8 @@ async fn main() -> Result<(), xactor::Error> {
         request_type: WebRequestType::GET,
         body: None,
         header: None,
-        interval_sec: 60*15,
+        //                   sec min hour dayofmonth month  dayofweek
+        cron: String::from("0  */1  *   *  *  *"),
         jmespatch_query: String::from("merge({ measure_data: {mark: to_number(price)} }, { measure_name: `\"BTC-USD\"`})"), 
         storage_var: shared_variables.clone(),
         response_action: ProducerAction::PUBLISHDATA,
@@ -74,7 +75,8 @@ async fn main() -> Result<(), xactor::Error> {
         request_type: WebRequestType::GET,
         body: None,
         header: None,
-        interval_sec: 60*15,
+        //                   sec min hour dayofmonth month  dayofweek
+        cron: String::from("30  */1  *   *  *  *"),
         jmespatch_query: String::from("merge({ measure_data: {mark: to_number(price)} }, { measure_name: `\"ETH-USD\"`})"), 
         storage_var: shared_variables.clone(),
         response_action: ProducerAction::PUBLISHDATA,
@@ -90,7 +92,8 @@ async fn main() -> Result<(), xactor::Error> {
             request_type: WebRequestType::GET,
             body: None,
             header: None,
-            interval_sec: 60*15,
+            //                   sec min hour dayofmonth month  dayofweek
+            cron: String::from("30  */1  *   *  *  *"),
             jmespatch_query: String::from("merge({ measure_data: {mark: to_number(price)} }, { measure_name: `\"COMP-USD\"`})"), 
             storage_var: shared_variables.clone(),
             response_action: ProducerAction::PUBLISHDATA,
@@ -106,7 +109,8 @@ async fn main() -> Result<(), xactor::Error> {
             request_type: WebRequestType::GET,
             body: None,
             header: None,
-            interval_sec: 60*15,
+            //                   sec min hour dayofmonth month  dayofweek
+            cron: String::from("15  */1  *   *  *  *"),
             jmespatch_query: String::from("accounts[0].tokens[].{measure_name: symbol, measure_data: { balance: to_number(supply_balance_underlying.value), accrued: to_number(lifetime_supply_interest_accrued.value)} }"), 
             storage_var: shared_variables.clone(),
             response_action: ProducerAction::PUBLISHDATA,
@@ -122,7 +126,8 @@ async fn main() -> Result<(), xactor::Error> {
             request_type: WebRequestType::GET,
             body: None,
             header: None,
-            interval_sec: 60*15,
+            //                   sec min hour dayofmonth month  dayofweek
+            cron: String::from("45  */1  *   *  *  *"),
             jmespatch_query: String::from("cToken[?symbol==`\"cUSDC\"`||symbol==`\"cDAI\"`].{measure_name: symbol, measure_data: {supply_rate: to_number(supply_rate.value)}}"), 
             storage_var: shared_variables.clone(),
             response_action: ProducerAction::PUBLISHDATA,
@@ -131,7 +136,7 @@ async fn main() -> Result<(), xactor::Error> {
         // Send Request to scheduler
         scheduler_addr.send(compound2)?;
 
-        task::sleep(Duration::from_secs(10)).await;
+        task::sleep(Duration::from_secs(60*3)).await;
 
     scheduler_addr.send(Stop)?;    
 

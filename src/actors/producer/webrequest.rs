@@ -1,10 +1,13 @@
-use crate::actors::messages::{DataResponse, WebProducerSchedule, Refresh};
+use crate::actors::messages::{DataResponse, WebProducerSchedule, Refresh, Run};
 use crate::utility;
 use super::{ProducerAction, WebRequestType};
 use std::collections::HashMap;
 use std::time::UNIX_EPOCH;
 use std::time::SystemTime;
+use chrono::Utc;
 use std::time::Duration;
+use cron::Schedule;
+use std::str::FromStr;
 use async_trait::async_trait;
 use xactor::*;
 use jmespatch::Expression;
@@ -35,6 +38,7 @@ use http_types::mime;
 
 pub struct WebProducer {
     translation: Expression<'static>,
+    schedule: Schedule,
     request_description: WebProducerSchedule,
 }
 
@@ -43,35 +47,41 @@ impl Actor for WebProducer {
     async fn started(&mut self, _ctx: &mut Context<Self>) -> Result<()> {
         // optional: do stuff on handler startup, like subscribing to a Broker
         // ctx.subscribe::<RequestSchedule>().await?;
-        debug!("Actor::ReqBasic started");
+        debug!("Actor::WebProducer started for {}", &self.request_description.source_name);
         Ok(())
     }
 }
 
+
 #[async_trait]
-impl Handler<WebProducerSchedule> for WebProducer {
-    async fn handle(&mut self, ctx: &mut Context<Self>, msg: WebProducerSchedule) {
-        debug!("<RequestSchedule> received: {:?}", msg);
-        info!("<RequestSchedule> received: {}", msg.source_name);
-        self.run_request().await;
-        ctx.send_interval(Refresh{}, Duration::from_secs(msg.interval_sec));
+impl Handler<Refresh> for WebProducer {
+    async fn handle(&mut self, ctx: &mut Context<Self>, _msg: Refresh) {
+        info!("<Refresh> received for {}:", &self.request_description.source_name);
+        let next = self.schedule.upcoming(Utc).next().unwrap();
+        let diff = next - Utc::now() + chrono::Duration::milliseconds(100);
+        ctx.send_later(Run{}, diff.to_std().unwrap());
     }
 }
 
 #[async_trait]
-impl Handler<Refresh> for WebProducer {
-    async fn handle(&mut self, _ctx: &mut Context<Self>, _msg: Refresh) {
-        info!("<Refresh> received:");
+impl Handler<Run> for WebProducer {
+    async fn handle(&mut self, ctx: &mut Context<Self>, _msg: Run) {
+        info!("<Run> received for {}:", &self.request_description.source_name);
         self.run_request().await;
+        ctx.send_later(Refresh{}, Duration::from_millis(100));
     }
 }
+
+
 
 impl WebProducer {
 
     pub fn new(request_description: WebProducerSchedule) -> Self {
         let translation = jmespatch::compile(request_description.jmespatch_query.as_ref()).unwrap();
+        let schedule = Schedule::from_str(request_description.cron.as_str()).unwrap(); 
         WebProducer {
             translation,
+            schedule,
             request_description,
         }
     }

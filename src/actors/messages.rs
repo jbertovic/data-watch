@@ -11,7 +11,7 @@ pub struct WebProducerSchedule
     pub request_type: WebRequestType,
     pub body: Option<String>,
     pub header: Option<(String, String)>,
-    pub interval_sec: u64,
+    pub cron: String,
     pub jmespatch_query: String,
     pub storage_var: SharedVar,
     pub response_action: ProducerAction,
@@ -20,6 +20,10 @@ pub struct WebProducerSchedule
 #[message]
 #[derive(Debug, Clone)]
 pub struct Refresh;
+
+#[message]
+#[derive(Debug, Clone)]
+pub struct Run;
 
 #[message]
 #[derive(Debug, Clone)]

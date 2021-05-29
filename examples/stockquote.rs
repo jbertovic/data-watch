@@ -66,7 +66,8 @@ async fn main() -> Result<(), xactor::Error> {
         request_type: WebRequestType::POST,
         body: Some(String::from("grant_type=refresh_token&refresh_token=[[TDREFRESHTOKEN]]&client_id=[[TDCLIENTID]]")),
         header: None,
-        interval_sec: 1700,
+        //                   sec min hour dayofmonth month  dayofweek
+        cron: String::from("0  */30  9-16   *  *  1-5"),
         jmespatch_query: String::from("{ TDTOKEN: access_token }"), 
         storage_var: shared_variables.clone(),
         response_action: ProducerAction::STOREVARIABLE,
@@ -85,7 +86,8 @@ async fn main() -> Result<(), xactor::Error> {
         request_type: WebRequestType::GET,
         body: None,
         header: Some((String::from("Authorization"), String::from("Bearer [[TDTOKEN]]"))),
-        interval_sec: 15*60,
+        //                   sec min hour dayofmonth month  dayofweek
+        cron: String::from("10  */15  9-16   *  *  1-5"),
         jmespatch_query: String::from("*.{measure_name: symbol, measure_data: {lastPrice: lastPrice, highPrice: highPrice, lowPrice: lowPrice, mark: mark}}"), 
         storage_var: shared_variables.clone(),
         response_action: ProducerAction::PUBLISHDATA,
@@ -101,7 +103,8 @@ async fn main() -> Result<(), xactor::Error> {
         request_type: WebRequestType::GET,
         body: None,
         header: Some((String::from("Authorization"), String::from("Bearer [[TDTOKEN]]"))),
-        interval_sec: 15*60,
+        //                   sec min hour dayofmonth month  dayofweek
+        cron: String::from("10  */15  9-16   *  *  1-5"),
         jmespatch_query: String::from("*.{measure_name: symbol, measure_data: {lastPrice: lastPrice, highPrice: highPrice, lowPrice: lowPrice, lastPrice: lastPrice}}"), 
         storage_var: shared_variables.clone(),
         response_action: ProducerAction::PUBLISHDATA,

@@ -51,7 +51,8 @@ async fn main() -> Result<(), xactor::Error> {
         request_type: WebRequestType::GET,
         body: None,
         header: None,
-        interval_sec: 60,
+        //                   sec min hour dayofmonth month  dayofweek
+        cron: String::from("0/10  *  *  *  *  *"),
         jmespatch_query: String::from("merge({measure_name: name},{measure_data: main})"), 
         storage_var: shared_variables.clone(),
         response_action: ProducerAction::PUBLISHDATA,

@@ -19,6 +19,7 @@ pub type SharedVar = Arc<RwLock<HashMap<String, String>>>;
 
 
 // TODO: schedule defined using cron formatting
+// TODO: can we stream cron dates instead of just iterating?
 // TODO: selection trait on data to be used in different consumers
 // TODO: update file consumer (file or directory structure / 
         // action to define appending or latest / format csv, json, others?)

@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use xactor::*;
 use super::producer::WebProducer;
-use super::messages::{Stop, WebProducerSchedule};
+use super::messages::{Refresh, Stop, WebProducerSchedule};
 use log::{info, debug};
 
 /// Scheduler
@@ -49,7 +49,7 @@ impl Handler<WebProducerSchedule> for Scheduler {
 
         self.actors.push(newactor.clone());
 
-        newactor.send(msg).unwrap();
+        newactor.send(Refresh{}).unwrap();
     }
 }
 
