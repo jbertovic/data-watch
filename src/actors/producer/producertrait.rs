@@ -9,3 +9,6 @@ pub trait ProducerTrait<T> {
 
 // T should be key/value or 
 // T should be HashMap<String, Vec<(String, f64)>> (What's this type?)
+
+//https://stackoverflow.com/questions/53085270/how-do-i-implement-a-trait-with-a-generic-method
+

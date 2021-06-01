@@ -1,6 +1,6 @@
 use crate::actors::messages::{Refresh, Run, WebProducerSchedule};
 use crate::actors::producer::{apirequest::request_api, publishdata::publish_data, ProducerAction};
-use crate::utility;
+use crate::{jsonutility, varstore, DataSource, VarPairs};
 use async_trait::async_trait;
 use chrono::Utc;
 use cron::Schedule;
@@ -72,50 +72,56 @@ impl WebProducer {
         }
     }
 
-    /// Builds and runs request
     async fn run_request(&mut self) {
+        let response = self.get_request().await;
+        self.response_action(&response).await;
+    }
+
+    /// Builds and runs request
+    async fn get_request(&mut self) -> String {
         // swap variables in api_url, body, header for [[ ]]
-        let api_url = utility::swap_variable(
+        let api_url = varstore::swap_variable(
             &self.request_description.storage_var,
             &self.request_description.api_url,
             true,
         );
         let body = match self.request_description.body.clone() {
-            Some(b) => utility::swap_variable(&self.request_description.storage_var, &b, true),
+            Some(b) => varstore::swap_variable(&self.request_description.storage_var, &b, true),
             None => String::from(""),
         };
         let header = match &self.request_description.header {
             Some((key, value)) => {
                 let new_value =
-                    utility::swap_variable(&self.request_description.storage_var, &value, false);
+                    varstore::swap_variable(&self.request_description.storage_var, &value, false);
                 Some((key.as_str(), new_value))
             }
             None => None,
         };
 
-        let response = request_api(
+        request_api(
             &self.request_description.request_type,
             &api_url,
             &body,
             header,
         )
-        .await;
+        .await
+    }
 
-        self.response_action(&response).await;
+    fn translate_for_publish_data(&self, response: &str) -> DataSource {
+        jsonutility::parse_json_data(&self.translation, &response)
+    }
+
+    fn translate_for_variable_store(&self, response: &str) -> VarPairs {
+        jsonutility::parse_json_pair(&self.translation, &response)
     }
 
     async fn response_action(&self, response: &String) {
         match &self.request_description.response_action {
             ProducerAction::PUBLISHDATA => {
-                let data_received = utility::parse_json(&self.translation, &response);
-                publish_data(&self.request_description.source_name, data_received).await;
+                publish_data(&self.request_description.source_name, self.translate_for_publish_data(response)).await;
             }
             ProducerAction::STOREVARIABLE => {
-                utility::store_variable(
-                    &self.translation,
-                    &self.request_description.storage_var,
-                    &response,
-                );
+                varstore::store_variable(&self.request_description.storage_var, &self.translate_for_variable_store(&response));
             }
         }
     }

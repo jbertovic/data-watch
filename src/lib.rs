@@ -7,12 +7,13 @@ pub mod actors;
 // Utility
 // Collection of functions to store variables in shared storage, parse json to match data model, and
 // read stored variables to update strings
-pub mod utility;
+pub mod jsonutility;
+pub mod varstore;
 
 // global variables that can be used to implement in Producer configuration
 pub type SharedVar = Arc<RwLock<HashMap<String, String>>>;
 pub type DataSource = HashMap<String, Vec<(String, f64)>>;
-pub type VariablePairs = Vec<(String, String)>; 
+pub type VarPairs = Vec<(String, String)>; 
 
 // POSSIBLE:
 // create generic producer
