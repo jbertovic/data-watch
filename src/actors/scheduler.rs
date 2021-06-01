@@ -1,25 +1,25 @@
-use async_trait::async_trait;
-use xactor::*;
-use super::producer::WebProducer;
 use super::messages::{Refresh, Stop, WebProducerSchedule};
-use log::{info, debug};
+use super::producer::WebProducer;
+use async_trait::async_trait;
+use log::{debug, info};
+use xactor::*;
 
 /// Scheduler
 /// Start - subscribed to <RequestSchedule>
-/// 
+///
 /// <RequestSchedule>
 /// - spawn actor to handle new schedule
 /// - send message to actor
 /// - store actor address and RequestSchedule message
 ///
 /// <StopSchedule>
-/// 
+///
 /// <ListSchedule>
-/// 
+///
 ///
 /// <Ping>
 
-
+#[derive(Default)]
 pub struct Scheduler {
     scheduled: Vec<WebProducerSchedule>,
     actors: Vec<Addr<WebProducer>>,
@@ -49,7 +49,7 @@ impl Handler<WebProducerSchedule> for Scheduler {
 
         self.actors.push(newactor.clone());
 
-        newactor.send(Refresh{}).unwrap();
+        newactor.send(Refresh {}).unwrap();
     }
 }
 
@@ -58,15 +58,5 @@ impl Handler<Stop> for Scheduler {
     async fn handle(&mut self, ctx: &mut Context<Self>, _msg: Stop) {
         info!("<Stop> received");
         ctx.stop(None);
-    }
-}
-
-
-impl Scheduler {
-    pub fn new() -> Scheduler {
-        Scheduler {
-            scheduled: Vec::new(),
-            actors: Vec::new(),
-        }
     }
 }

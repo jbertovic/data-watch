@@ -3,23 +3,25 @@
 //   - maybe keep a vector of names to store in file
 //   - or create a unique routing name from name+description?
 
-use async_trait::async_trait;
-use async_std::{fs::File, io::{BufWriter, prelude::WriteExt}};
-use xactor::*;
 use crate::actors::messages::DataResponse;
-use log::{info};
+use async_std::{
+    fs::File,
+    io::{prelude::WriteExt, BufWriter},
+};
+use async_trait::async_trait;
+use log::info;
+use xactor::*;
 
 /// Outputs to writer which is currently stdout, but could switch in the future
 /// could include state to use with writer
 
 /// DataWriter
 /// Start - subscribed to <DataResponse>
-/// 
+///
 /// <DataResponse>
 /// - print DataTimeseries to screen
-/// 
+///
 /// <Ping>
-
 
 pub struct CsvConsumer {
     writer: BufWriter<File>,
@@ -27,22 +29,18 @@ pub struct CsvConsumer {
 
 impl CsvConsumer {
     pub fn new(writer: BufWriter<File>) -> CsvConsumer {
-        CsvConsumer {
-            writer: writer,
-        }
+        CsvConsumer { writer }
     }
 }
 
 impl Default for CsvConsumer {
-   fn default() ->  CsvConsumer {
-        async_std::task::block_on(
-            async {
-                let file = File::create("data.csv").await.unwrap();
-                CsvConsumer {
-                    writer: BufWriter::new(file),
-                } 
+    fn default() -> CsvConsumer {
+        async_std::task::block_on(async {
+            let file = File::create("data.csv").await.unwrap();
+            CsvConsumer {
+                writer: BufWriter::new(file),
             }
-        )
+        })
     }
 }
 
@@ -59,14 +57,20 @@ impl Actor for CsvConsumer {
 impl Handler<DataResponse> for CsvConsumer {
     async fn handle(&mut self, _ctx: &mut Context<Self>, msg: DataResponse) {
         // append to csv file stream
-        self.writer.write(format!("\"{}\", \"{}\", \"{}\", {}, {}\n", 
-            msg.source_name, 
-            msg.measure_name,
-            msg.measure_desc,
-            msg.measure_value,
-            msg.timestamp,
-        ).as_bytes()).await.unwrap();
+        self.writer
+            .write(
+                format!(
+                    "\"{}\", \"{}\", \"{}\", {}, {}\n",
+                    msg.source_name,
+                    msg.measure_name,
+                    msg.measure_desc,
+                    msg.measure_value,
+                    msg.timestamp,
+                )
+                .as_bytes(),
+            )
+            .await
+            .unwrap();
         self.writer.flush().await.unwrap();
     }
 }
-

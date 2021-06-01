@@ -1,18 +1,17 @@
+use crate::actors::messages::DataResponse;
 use async_trait::async_trait;
 use xactor::*;
-use crate::actors::messages::{DataResponse};
 
 /// Outputs to writer which is currently stdout, but could switch in the future
 /// could include state to use with writer
 
 /// DataWriter
 /// Start - subscribed to <DataResponse>
-/// 
+///
 /// <DataResponse>
 /// - print DataTimeseries to screen
-/// 
+///
 /// <Ping>
-
 
 #[derive(Default)]
 pub struct StdoutConsumer;
@@ -33,4 +32,3 @@ impl Handler<DataResponse> for StdoutConsumer {
         println!("{:?}", msg);
     }
 }
-

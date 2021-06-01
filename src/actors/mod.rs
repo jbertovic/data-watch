@@ -1,7 +1,6 @@
-mod scheduler;
+pub mod consumer;
 pub mod messages;
 pub mod producer;
-pub mod consumer;
+mod scheduler;
 
-pub use scheduler::Scheduler as Scheduler;
-
+pub use scheduler::Scheduler;

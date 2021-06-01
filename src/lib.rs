@@ -1,28 +1,29 @@
 use std::collections::HashMap;
-use std::sync::RwLock;
 use std::sync::Arc;
+use std::sync::RwLock;
 
 pub mod actors;
 
-
 // Utility
-// Collection of functions to store variables in shared storage, parse json to match data model, and 
-// read stored variables to update strings 
+// Collection of functions to store variables in shared storage, parse json to match data model, and
+// read stored variables to update strings
 pub mod utility;
 
 // global variables that can be used to implement in Producer configuration
 pub type SharedVar = Arc<RwLock<HashMap<String, String>>>;
+pub type DataSource = HashMap<String, Vec<(String, f64)>>;
+pub type VariablePairs = Vec<(String, String)>; 
 
 // POSSIBLE:
 // create generic producer
 // move web items out of actor to run
+// what about interval vs cron schedule (new enum that includes either)
+// what about non-fire days (like holidays?)
 
-
-// TODO: schedule defined using cron formatting
 // TODO: can we stream cron dates instead of just iterating?
 // TODO: selection trait on data to be used in different consumers
-// TODO: update file consumer (file or directory structure / 
-        // action to define appending or latest / format csv, json, others?)
+// TODO: update file consumer (file or directory structure /
+// action to define appending or latest / format csv, json, others?)
 // TODO: add memory cache actor for measures that is live over a finite time, able to register which variables
 // TODO: Selective printing or csv storage
 // TODO: Configuration can be saved and loaded - example combining Weather and Quote
@@ -40,10 +41,8 @@ pub type SharedVar = Arc<RwLock<HashMap<String, String>>>;
 // FUTURE: add server to manage scheduler
 // FUTURE: (NOT sure if this belongs) add ability to fetch events/transactions that aren't timestamp related
 
-
 // Playground links
 // ace<rwlock<hashmap>>
 // https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=91cfd63c6b34d2ecc527dd1a4e2f95e1
 // replace variable
 // https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=b51dec5bba77001ffa8d946911d5c529
-

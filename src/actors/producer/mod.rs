@@ -1,7 +1,9 @@
-mod webrequest;
-mod producer;
+mod apirequest;
+mod producertrait;
+mod publishdata;
+mod webproducer;
 
-pub use webrequest::WebProducer as WebProducer;
+pub use webproducer::WebProducer;
 
 /// Defines the type of action on Producer
 #[derive(Debug, Clone)]
@@ -12,7 +14,7 @@ pub enum ProducerAction {
 
 // Defines type of Web Request
 #[derive(Debug, Clone)]
-pub enum WebRequestType {
+pub enum ApiRequestType {
     GET,
     POST,
 }

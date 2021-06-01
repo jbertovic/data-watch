@@ -1,5 +1,5 @@
 mod csvwriter;
 mod stdoutwriter;
 
-pub use csvwriter::CsvConsumer as CsvConsumer;
-pub use stdoutwriter::StdoutConsumer as StdoutConsumer;
+pub use csvwriter::CsvConsumer;
+pub use stdoutwriter::StdoutConsumer;
